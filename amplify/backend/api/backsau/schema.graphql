@@ -1,0 +1,84 @@
+type Beitelag
+@model(subscriptions: null)
+@key(fields: ["id"])
+{
+  id: ID! #userID of owner
+  name: String!
+  description: String!
+  members: [String!]!
+  @auth(rules: [
+    {allow: owner, ownerField: "id"}
+    {allow: owner, ownerField: "members", operations: [read]}
+  ])
+  beitelagMembers: [BeitelagMember]
+  @connection(keyName: "beitelagMemberByBeitelag", fields: ["id"])
+  @auth(rules: [
+    {allow: owner, ownerField: "id"}
+    {allow: owner, ownerField: "members", operations: [read]}
+  ])
+  joinRequests: [JoinRequest]
+  @connection(keyName: "joinRequestByBeitelag", fields: ["id"])
+  @auth(rules: [
+    {allow: owner, ownerField: "id", operations: [create, update, delete]}]
+  )
+}
+
+type JoinRequest
+@model(subscriptions: null)
+@auth(rules: [
+  {allow: owner, ownerField: "id"}
+  {allow: owner, ownerField: "beitelagID", operations: [read, delete]}
+])
+@key(fields: [ "id" ])
+@key(name: "joinRequestByBeitelag", fields: [ "beitelagID", "id"], queryField: "joinRequestByBeitelag")
+{
+  id: ID! #userID
+  beitelagID: ID!
+  nickname: String!
+  email: String!
+  beitelag: Beitelag @connection(fields: ["beitelagID"])
+}
+
+type BeitelagMember
+@model(subscriptions: null)
+@auth(rules: [
+  {allow: owner, ownerField: "id"}
+  {allow: owner, ownerField: "beitelagID"}
+  {allow: owner, ownerField: "sharedWith", operations: [read]}
+])
+@key(fields: [ "id" ])
+@key(name: "beitelagMemberByBeitelag", fields: [ "beitelagID", "id"], queryField: "beitelagMemberByBeitelag")
+{
+  id: ID! #userID
+  beitelagID: ID!
+  sharedWith: [String!]!
+  nickName: String!
+  beitelag: Beitelag @connection(fields: ["beitelagID"])
+  trips: [Trip] @connection(fields: ["id"])
+}
+
+type Trip
+@model(subscriptions: null)
+@auth(rules: [{ allow: owner, ownerField: "id" }])
+@key(fields: ["id", "started"])
+{
+  id: ID! #userID
+  name: String!
+  started: AWSDateTime!
+  observations: AWSJSON!
+  userPath: AWSJSON!
+  shared: Boolean!
+  observationImages: [ObservationImage]
+}
+
+type ObservationImage {
+  name: String!
+  image: S3Object!
+}
+
+type S3Object {
+  bucket: String!
+  region: String!
+  key: String!
+}
+
